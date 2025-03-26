@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generador de iptables (Profesional)</title>
+    <style>
+        /* Estilos mejorados */
+        :root {
+            --primary: #007bff;
+            --secondary: #6c757d;
+            --light: #f8f9fa;
+            --dark: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f0f4f8;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .section {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            background: var(--light);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 5px;
+            margin: 5px 0;
+        }
+
+        .btn {
+            padding: 8px 15px;
+            margin: 2px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: var(--primary);
+            color: white;
+            transition: background 0.3s;
+            font-weight: 500;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .command-output {
+            padding: 10px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+
+        .explanation {
+            background: #e9f3fb;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid var(--primary);
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #555;
+            color: white;
+            text-align: center;
+            padding: 5px 0;
+            border-radius: 6px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .templates {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .template-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .template-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .template-card h4 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .template-card p {
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+
+        .warning {
+            color: #dc3545;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Generador de iptables (Profesional)</h1>
+        
+        <!-- Sección de opciones -->
+        <div class="section">
+            <h3>Tabla</h3>
+            <div class="btn-group">
+                <div class="tooltip">
+                    <button class="btn" onclick="addOption('filter')">FILTER</button>
+                    <span class="tooltiptext">Tabla por defecto para reglas de filtrado</span>
+                </div>
+                <div class="tooltip">
+                    <button class="btn" onclick="addOption('nat')">NAT</button>
+                    <span class="tooltiptext">Para traducción de direcciones (ej: router)</span>
+                </div>
+                <div class="tooltip">
+                    <button class="btn" onclick="addOption('mangle')">MANGLE</button>
+                    <span class="tooltiptext">Para modificar paquetes (ej: QoS)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Cadena</h3>
+            <div class="btn-group">
+                <div class="tooltip">
+                    <button class="btn" onclick="addOption('INPUT')">INPUT</button>
+                    <span class="tooltiptext">Paquetes entrantes al sistema</span>
+                </div>
+                <div class="tooltip">
+                    <button class="btn" onclick="addOption('OUTPUT')">OUTPUT</button>
+                    <span class="tooltiptext">Paquetes salientes del sistema</span>
+                </div>
+                <div class="tooltip">
+                    <button class="btn" onclick="addOption('FORWARD')">FORWARD</button>
+                    <span class="tooltiptext">Paquetes que pasan por el sistema</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Protocolo</h3>
+            <div class="btn-group">
+                <div class="tooltip">
+                    <button class="btn" onclick="addOption('tcp')">TCP</button>
+                    <span class="tooltiptext">Protocolo de conexión orientada a conexión (HTTP, SSH)</span>
+                </div>
+                <div class="tooltip">
+                    <button class="btn" onclick="addOption('udp')">UDP</button>
+                    <span class="tooltiptext">Protocolo sin conexión (DNS, VoIP)</span>
+                </div>
+                <div class="tooltip">
+                    <button class="btn" onclick="addOption('icmp')">ICMP</button>
+                    <span class="tooltiptext">Protocolo de mensajes de control (ping)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Puerto</h3>
+            <div class="btn-group">
+                <input type="number" id="port" placeholder="Ej: 80">
+                <div class="tooltip">
+                    <button class="btn" onclick="addPort()">Añadir puerto</button>
+                    <span class="tooltiptext">Especifica el puerto afectado</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>IP origen</h3>
+            <div class="btn-group">
+                <input type="text" id="source" placeholder="Ej: 192.168.1.100">
+                <div class="tooltip">
+                    <button class="btn" onclick="addSource()">Añadir origen</button>
+                    <span class="tooltiptext">Filtra por IP origen</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>IP destino</h3>
+            <div class="btn-group">
+                <input type="text" id="destination" placeholder="Ej: 8.8.8.8">
+                <div class="tooltip">
+                    <button class="btn" onclick="addDestination()">Añadir destino</button>
+                    <span class="tooltiptext">Filtra por IP destino</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Acción</h3>
+            <div class="btn-group">
+                <div class="tooltip">
+                    <button class="btn" onclick="addOption('ACCEPT')">ACCEPT</button>
+                    <span class="tooltiptext">Permite el tráfico</span>
+                </div>
+                <div class="tooltip">
+                    <button class="btn" onclick="addOption('DROP')">DROP</button>
+                    <span class="tooltiptext">Ignora el tráfico (silencioso)</span>
+                </div>
+                <div class="tooltip">
+                    <button class="btn" onclick="addOption('REJECT')">REJECT</button>
+                    <span class="tooltiptext">Bloquea y envía mensaje de rechazo</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Explicación del comando -->
+        <div class="explanation">
+            <h3>¿Qué hace este comando?</h3>
+            <div id="command-explanation"></div>
+        </div>
+
+        <!-- Comando generado -->
+        <div class="command-output">
+            <h3>Comando generado:</h3>
+            <pre id="command-output"></pre>
+            <button class="btn btn-secondary" onclick="copyCommand()">Copiar Comando</button>
+        </div>
+
+        <!-- Plantillas -->
+        <div class="templates">
+            <div class="template-card" onclick="applyTemplate('http')">
+                <h4>HTTP/HTTPS</h4>
+                <p>Permite conexiones web seguras</p>
+            </div>
+
+            <div class="template-card" onclick="applyTemplate('ssh')">
+                <h4>SSH</h4>
+                <p>Acceso remoto seguro</p>
+            </div>
+
+            <div class="template-card" onclick="applyTemplate('block')">
+                <h4>Bloquear IP</h4>
+                <p>Deniega todo tráfico de una IP</p>
+            </div>
+
+            <div class="template-card" onclick="applyTemplate('dns')">
+                <h4>DNS</h4>
+                <p>Permite consultas de nombres de dominio</p>
+            </div>
+
+            <div class="template-card" onclick="applyTemplate('ftp')">
+                <h4>FTP</h4>
+                <p>Transferencia de archivos</p>
+            </div>
+
+            <div class="template-card" onclick="applyTemplate('smtp')">
+                <h4>SMTP</h4>
+                <p>Envío de correos electrónicos</p>
+            </div>
+
+            <div class="template-card" onclick="applyTemplate('icmp')">
+                <h4>ICMP</h4>
+                <p>Permite ping y diagnóstico de red</p>
+            </div>
+
+            <div class="template-card" onclick="applyTemplate('ssh-alt')">
+                <h4>SSH en puerto 2222</h4>
+                <p>Evita ataques comunes al puerto 22</p>
+            </div>
+
+            <div class="template-card" onclick="applyTemplate('block-range')">
+                <h4>Bloquear rango IP</h4>
+                <p>Deniega tráfico de un rango de IPs</p>
+            </div>
+             <!-- Subcategorías avanzadas -->
+            <div class="template-card" onclick="applyTemplate('ssh-limit')">
+                <h4>Límite SSH (3 intentos/min)</h4>
+                <p>Bloquea IPs con más de 3 intentos SSH en 1 minuto</p>
+            </div>
+
+            <div class="template-card" onclick="applyTemplate('time-restrict')">
+                <h4>Restricción horaria</h4>
+                <p>Permitir acceso solo en horarios específicos</p>
+            </div>
+
+            <div class="template-card" onclick="applyTemplate('mac-filter')">
+                <h4>Filtrado por MAC</h4>
+                <p>Bloquear dispositivos por dirección MAC</p>
+            </div>
+
+            <div class="template-card" onclick="applyTemplate('stateful')">
+                <h4>Reglas stateful</h4>
+                <p>Permitir conexiones establecidas</p>
+            </div>
+
+            <div class="template-card" onclick="applyTemplate('nat-masquerade')">
+                <h4>NAT Masquerade</h4>
+                <p>Redirigir tráfico de red interna</p>
+            </div>
+        </div>
+
+        <!-- Acciones -->
+        <div style="margin-top: 20px;">
+            <button class="btn" onclick="executeCommand()">Ejecutar</button>
+            <button class="btn btn-secondary" onclick="clearCommand()">Limpiar</button>
+        </div>
+    </div>
+
+    <script>
+        // Código mejorado y funcional
+        let command = "iptables -A ";
+        let options = [];
+        let logs = [];
+
+        // Funciones principales
+        function addOption(option) {
+            options.push(option);
+            updateCommand();
+        }
+
+        function addPort() {
+            const port = document.getElementById('port').value;
+            if(port) {
+                options.push(`--dport ${port}`);
+                document.getElementById('port').value = '';
+                updateCommand();
+            }
+        }
+
+        function addSource() {
+            const source = document.getElementById('source').value;
+            if(source) {
+                options.push(`--source ${source}`);
+                document.getElementById('source').value = '';
+                updateCommand();
+            }
+        }
+
+        function addDestination() {
+            const destination = document.getElementById('destination').value;
+            if(destination) {
+                options.push(`--destination ${destination}`);
+                document.getElementById('destination').value = '';
+                updateCommand();
+            }
+        }
+
+        function updateCommand() {
+            command = "iptables -A ";
+            options.forEach(option => {
+                command += `${option} `;
+            });
+            document.getElementById('command-output').textContent = command.trim();
+            explainCommand();
+        }
+
+        // Plantillas
+        function applyTemplate(type) {
+            switch(type) {
+                case 'http':
+                    options = ['INPUT', '-p', 'tcp', '--dport', '80,443', '-j', 'ACCEPT'];
+                    break;
+                case 'ssh':
+                    options = ['INPUT', '-p', 'tcp', '--dport', '22', '-j', 'ACCEPT'];
+                    break;
+                case 'block':
+                    options = ['INPUT', '-s', '[IP]', '-j', 'DROP'];
+                    break;
+                case 'dns':
+                    options = ['INPUT', '-p', 'udp', '--dport', '53', '-j', 'ACCEPT'];
+                    break;
+                case 'ftp':
+                    options = ['INPUT', '-p', 'tcp', '--dport', '20,21', '-j', 'ACCEPT'];
+                    break;
+                case 'smtp':
+                    options = ['INPUT', '-p', 'tcp', '--dport', '25', '-j', 'ACCEPT'];
+                    break;
+                case 'icmp':
+                    options = ['INPUT', '-p', 'icmp', '-j', 'ACCEPT'];
+                    break;
+                case 'ssh-alt':
+                    options = ['INPUT', '-p', 'tcp', '--dport', '2222', '-j', 'ACCEPT'];
+                    break;
+                case 'block-range':
+                    options = ['INPUT', '-s', '[RANGO_IP]', '-j', 'DROP'];
+                    break;
+                 case 'ssh-limit':
+                    options = [
+                        'INPUT', '-p', 'tcp', '--dport', '22', '-m', 'state', '--state', 'NEW',
+                        '-m', 'recent', '--set', '--name', 'SSH',
+                         'INPUT', '-p', 'tcp', '--dport', '22', '-m', 'state', '--state', 'NEW',
+                        '-m', 'recent', '--update', '--seconds', '60', '--hitcount', '3', '--name', 'SSH',
+                        '-j', 'DROP',
+                         'INPUT', '-p', 'tcp', '--dport', '22', '-m', 'state', '--state', 'NEW,ESTABLISHED',
+                        '-j', 'ACCEPT'
+                    ];
+                    break;
+
+                case 'time-restrict':
+                    options = [
+                        'INPUT', '-p', 'tcp', '--dport', '80', '-m', 'time', '--timestart', '09:00',
+                        '--timestop', '18:00', '-j', 'ACCEPT',
+                         'INPUT', '-p', 'tcp', '--dport', '80', '-j', 'DROP'
+                    ];
+                    break;
+
+                case 'mac-filter':
+                    options = [
+                         'INPUT', '-m', 'mac', '--mac-source', 'AA:BB:CC:DD:EE:FF', '-j', 'DROP'
+                    ];
+                    break;
+
+                case 'stateful':
+                    options = [
+                         'INPUT', '-m', 'conntrack', '--ctstate', 'ESTABLISHED,RELATED', '-j', 'ACCEPT'
+                    ];
+                    break;
+
+                case 'nat-masquerade':
+                    options = [
+                        '-t', 'nat', '-A', 'POSTROUTING', '-o', 'eth0', '-j', 'MASQUERADE'
+                    ];
+                    break;
+        }
+            updateCommand();
+        }
+        function copyCommand() {
+             const commandText = document.getElementById('command-output').textContent;
+
+             navigator.clipboard.writeText(commandText)
+                  .then(() => {
+                       alert('Comando copiado al portapapeles!');
+                  })
+                  .catch(err => {
+                       console.error('Error al copiar: ', err);
+                       alert('Error al copiar el comando. Por favor, cópielo manualmente.');
+                  });
+        }
+        // Explicación del comando
+        function explainCommand() {
+            const explanation = [];
+            const warnings = validateCommand();
+            
+            // Tabla
+            if(options.includes('filter')) explanation.push('Tabla de filtrado (reglas básicas)');
+            if(options.includes('nat')) explanation.push('Tabla de NAT (traducción de direcciones)');
+            if(options.includes('mangle')) explanation.push('Tabla de mangle (modificación de paquetes)');
+
+            // Cadena
+            const chain = options.find(c => ['INPUT', 'OUTPUT', 'FORWARD'].includes(c));
+            if(chain) explanation.push(`Cadena ${chain}: ${getChainDescription(chain)}`);
+
+            // Protocolo
+            const protocol = options.find(c => ['tcp', 'udp', 'icmp'].includes(c));
+            if(protocol) explanation.push(`Protocolo ${protocol}: ${getProtocolDescription(protocol)}`);
+
+            // Puerto
+            const port = options.find(p => p.startsWith('--dport'));
+            if(port) explanation.push(`Puerto ${port.split(' ')[1]}`);
+
+            // IP origen/destino
+            const source = options.find(p => p.startsWith('--source'));
+            if(source) explanation.push(`IP origen ${source.split(' ')[1]}`);
+            
+            const destination = options.find(p => p.startsWith('--destination'));
+            if(destination) explanation.push(`IP destino ${destination.split(' ')[1]}`);
+
+            // Acción
+            const action = options.find(a => ['ACCEPT', 'DROP', 'REJECT'].includes(a));
+            if(action) explanation.push(`Acción: ${getActionDescription(action)}`);
+             // Subcategorías avanzadas
+            if(options.includes('recent')) {
+                explanation.push('Límite de conexiones SSH: Bloquea IPs con más de 3 intentos en 1 minuto');
+            }
+
+            if(options.includes('time')) {
+                explanation.push('Restricción horaria: Acceso permitido solo entre 09:00 y 18:00');
+            }
+
+            if(options.includes('mac')) {
+                explanation.push('Filtrado por MAC: Bloquea dispositivos específicos');
+            }
+
+            if(options.includes('conntrack')) {
+                explanation.push('Reglas stateful: Permite conexiones establecidas');
+            }
+
+            if(options.includes('MASQUERADE')) {
+                explanation.push('NAT Masquerade: Redirige tráfico de red interna');
+            }
+
+
+            // Advertencias
+            if(warnings.length > 0) {
+                explanation.push(`<div class="warning">Advertencias de seguridad:<br>${warnings.join('<br>')}</div>`);
+            }
+
+            document.getElementById('command-explanation').innerHTML = explanation.join('<br>');
+        }
+
+        // Descripciones
+        function getChainDescription(chain) {
+            switch(chain) {
+                case 'INPUT': return 'Paquetes entrantes al sistema';
+                case 'OUTPUT': return 'Paquetes salientes del sistema';
+                case 'FORWARD': return 'Paquetes que pasan por el sistema';
+                default: return '';
+            }
+        }
+
+        function getProtocolDescription(protocol) {
+            switch(protocol) {
+                case 'tcp': return 'Protocolo de conexión orientada a conexión (HTTP, SSH)';
+                case 'udp': return 'Protocolo sin conexión (DNS, VoIP)';
+                case 'icmp': return 'Protocolo de mensajes de control (ping)';
+                default: return '';
+            }
+        }
+
+        function getActionDescription(action) {
+            switch(action) {
+                case 'ACCEPT': return 'Permite el tráfico';
+                case 'DROP': return 'Ignora el tráfico (silencioso)';
+                case 'REJECT': return 'Bloquea y envía mensaje de rechazo';
+                default: return '';
+            }
+        }
+
+        // Validación de seguridad
+        function validateCommand() {
+            const warnings = [];
+            
+            // SSH en puerto 22
+            if(options.includes('22') && options.includes('ACCEPT')) {
+                warnings.push('⚠️ SSH en puerto 22 es un objetivo común de ataques');
+            }
+
+            // DROP sin IP específica
+            if(options.includes('DROP') && !options.some(o => o.startsWith('--source') || o.startsWith('--destination'))) {
+                warnings.push('⚠️ DROP sin IP específica bloquea todo el tráfico');
+            }
+
+            // ICMP
+            if(options.includes('ACCEPT') && options.includes('icmp')) {
+                warnings.push('⚠️ ICMP puede usarse para ataques de saturación');
+            }
+             if(options.includes('recent') && !options.includes('DROP')) {
+                warnings.push('⚠️ Límite SSH sin acción DROP');
+            }
+
+            if(options.includes('time') && !options.includes('DROP')) {
+                warnings.push('⚠️ Restricción horaria sin bloqueo por defecto');
+            }
+
+            if(options.includes('mac') && !options.includes('DROP')) {
+                warnings.push('⚠️ Filtrado MAC sin acción DROP');
+            }
+
+            return warnings;
+        }
+
+        // Ejecución y logs
+        function executeCommand() {
+            const cmd = command.trim();
+            if(cmd) {
+                try {
+                    logs.push(`Ejecutado: ${cmd}`);
+                    document.getElementById('logs-output').textContent = logs.join('\n');
+                    alert("Comando ejecutado correctamente");
+                } catch(e) {
+                    logs.push(`Error: ${e}`);
+                    document.getElementById('logs-output').textContent = logs.join('\n');
+                }
+            }
+        }
+
+        function clearCommand() {
+            options = [];
+            command = "iptables -A ";
+            updateCommand();
+        }
+    </script>
+</body>
+</html>
